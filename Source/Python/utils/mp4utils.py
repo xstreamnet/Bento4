@@ -183,6 +183,9 @@ class Mp4Track:
             self.channels = sample_desc['channels']
                         
         self.language = info['language']
+
+	if 'media' in info and 'bitrate' in info['media']:
+	    self.bandwidth = int(info['media']['bitrate'] * 1024)
         
     def update(self, options):
         # compute the total number of samples
@@ -213,7 +216,8 @@ class Mp4Track:
         # compute bandwidth
         if options.min_buffer_time == 0.0:
             options.min_buffer_time = self.average_segment_duration
-        self.bandwidth = ComputeBandwidth(options.min_buffer_time, self.segment_sizes, self.segment_durations)
+	if self.bandwidth == 0:
+    	    self.bandwidth = ComputeBandwidth(options.min_buffer_time, self.segment_sizes, self.segment_durations)
 
     def compute_kid(self):
         moov = FilterChildren(self.parent.tree, 'moov')[0]
@@ -258,7 +262,7 @@ class Mp4File:
             print '  found', len(self.segments), 'segments'
                         
         # get the mp4 file info
-        json_info = Mp4Info(options, filename, format='json', fast=True)
+        json_info = Mp4Info(options, filename, format='json')
         self.info = json.loads(json_info, strict=False, object_pairs_hook=collections.OrderedDict)
 
         for track in self.info['tracks']:
